@@ -355,23 +355,29 @@ en:
         search: "Search for a Message by title:"
         placeholder: "type the message title here"
 
-    queue:
-      topic: "Topic:"
-      approve: "Approve"
-      reject: "Reject"
-      delete_user: "Delete User"
-      title: "Needs Approval"
-      none: "There are no posts to review."
-      edit: "Edit"
-      cancel: "Cancel"
-      view_pending: "view pending posts"
-      has_pending_posts:
+    review:
+      none: "There is nothing to review right now."
+      view_pending: "view pending"
+      topic_has_pending:
         one: "This topic has <b>1</b> post awaiting approval"
         other: "This topic has <b>{{count}}</b> posts awaiting approval"
-
-      confirm: "Save Changes"
-      delete_prompt: "Are you sure you want to delete <b>%{username}</b>? This will remove all of their posts and block their email and IP address."
-
+      title: "Needs Review"
+      topic: "Topic:"
+      edit: "Edit"
+      save: "Save"
+      cancel: "Cancel"
+      new_topic: "New Topic:"
+      scores:
+        description: "Description"
+        score: "Score"
+      types:
+        reviewable_flagged_post:
+          title: 'Flagged Post'
+          flagged_by: "Flagged By"
+        reviewable_queued_post:
+          title: 'New Post'
+        reviewable_user:
+          title: 'User'
       approval:
         title: "Post Needs Approval"
         description: "We've received your new post but it needs to be approved by a moderator before it will appear. Please be patient."
@@ -3747,19 +3753,12 @@ en:
         nav:
           new: "New"
           active: "Active"
-          pending: "Pending"
           staff: "Staff"
           suspended: "Suspended"
           silenced: "Silenced"
           suspect: "Suspect"
           staged: "Staged"
         approved: "Approved?"
-        approved_selected:
-          one: "approve user"
-          other: "approve users ({{count}})"
-        reject_selected:
-          one: "reject user"
-          other: "reject users ({{count}})"
         titles:
           active: "Active Users"
           new: "New Users"
@@ -3776,12 +3775,6 @@ en:
           suspended: "Suspended Users"
           suspect: "Suspect Users"
           staged: "Staged Users"
-        reject_successful:
-          one: "Successfully rejected 1 user."
-          other: "Successfully rejected %{count} users."
-        reject_failures:
-          one: "Failed to reject 1 user."
-          other: "Failed to reject %{count} users."
         not_verified: "Not verified"
         check_email:
           title: "Reveal this user's email address"

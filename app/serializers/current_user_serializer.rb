@@ -30,8 +30,7 @@ class CurrentUserSerializer < BasicUserSerializer
              :muted_category_ids,
              :dismissed_banner_key,
              :is_anonymous,
-             :post_queue_new_count,
-             :show_queued_posts,
+             :reviewable_count,
              :read_faq,
              :automatically_unpin_topics,
              :mailing_list_mode,
@@ -188,20 +187,8 @@ class CurrentUserSerializer < BasicUserSerializer
     object.anonymous?
   end
 
-  def post_queue_new_count
-    QueuedPost.new_count
-  end
-
-  def include_post_queue_new_count?
-    object.staff?
-  end
-
-  def show_queued_posts
-    true
-  end
-
-  def include_show_queued_posts?
-    object.staff? && (NewPostManager.queue_enabled? || QueuedPost.new_count > 0)
+  def reviewable_count
+    Reviewable.list_for(object).count
   end
 
   def mailing_list_mode

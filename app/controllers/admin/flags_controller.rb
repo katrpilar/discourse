@@ -71,31 +71,26 @@ class Admin::FlagsController < Admin::AdminController
       user: current_user
     )
 
-    post_action_type = PostAction.post_action_type_for_post(post.id)
-
-    if !post_action_type
-      render_json_error(
-        I18n.t("flags.errors.already_handled"),
-        status: 409
-      )
-      return
-    end
+    reviewable = post.reviewable_flag
+    return render_json_error(I18n.t("flags.errors.already_handled"), status: 409) if reviewable.blank?
 
     keep_post = ['silenced', 'suspended', 'keep'].include?(params[:action_on_post])
     delete_post = params[:action_on_post] == "delete"
     restore_post = params[:action_on_post] == "restore"
 
     if delete_post
-      # PostDestroy calls PostAction.agree_flags!
+      # PostDestroy automatically agrees with flags
       destroy_post(post)
     elsif restore_post
-      PostAction.agree_flags!(post, current_user, delete_post)
+      reviewable.perform(current_user, :agree, delete_post: delete_post)
       PostDestroyer.new(current_user, post).recover
     else
-      PostAction.agree_flags!(post, current_user, delete_post)
-      if !keep_post
-        PostAction.hide_post!(post, post_action_type)
-      end
+      reviewable.perform(
+        current_user,
+        :agree,
+        delete_post: delete_post,
+        hide_post: !keep_post
+      )
     end
 
     render body: nil
@@ -105,14 +100,16 @@ class Admin::FlagsController < Admin::AdminController
     params.permit(:id)
     post = Post.find(params[:id])
 
-    DiscourseEvent.trigger(
-      :before_staff_flag_action,
-      type: 'disagree',
-      post: post,
-      user: current_user
-    )
+    if reviewable = post&.reviewable_flag
+      DiscourseEvent.trigger(
+        :before_staff_flag_action,
+        type: 'disagree',
+        post: post,
+        user: current_user
+      )
 
-    PostAction.clear_flags!(post, current_user)
+      reviewable.perform(current_user, :disagree)
+    end
 
     render body: nil
   end
@@ -121,15 +118,17 @@ class Admin::FlagsController < Admin::AdminController
     params.permit(:id, :delete_post)
     post = Post.find(params[:id])
 
-    DiscourseEvent.trigger(
-      :before_staff_flag_action,
-      type: 'defer',
-      post: post,
-      user: current_user
-    )
+    if reviewable = post&.reviewable_flag
+      DiscourseEvent.trigger(
+        :before_staff_flag_action,
+        type: 'defer',
+        post: post,
+        user: current_user
+      )
 
-    PostAction.defer_flags!(post, current_user, params[:delete_post])
-    destroy_post(post) if params[:delete_post]
+      reviewable.perform(current_user, :ignore, delete_post: params[:delete_post])
+      destroy_post(post) if params[:delete_post]
+    end
 
     render body: nil
   end

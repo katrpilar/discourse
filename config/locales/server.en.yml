@@ -345,10 +345,6 @@ en:
 
   excerpt_image: "image"
 
-  queue:
-    delete_reason: "Deleted via post moderation queue"
-    not_found: "Post not found or already updated."
-
   groups:
     success:
       bulk_add:
@@ -4295,3 +4291,16 @@ en:
     unknown: "unknown"
     user_merged: "%{username} was merged into this account"
     user_delete_self: "Deleted by self from %{url}"
+
+  reviewables:
+    missing_version: "You must supply a version parameter"
+    conflict: "There was an update conflict preventing you from doing that."
+    actions:
+      approve:
+        title: "Approve"
+      reject:
+        title: "Reject"
+      delete_user:
+        title: "Delete User"
+        confirm: "Are you sure you want to delete that user? This will remove all of their posts and block their email and IP address."
+        reason: "Deleted via review queue"

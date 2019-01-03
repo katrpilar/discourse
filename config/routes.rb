@@ -317,6 +317,13 @@ Discourse::Application.routes.draw do
     end
   end
 
+  get "review" => "reviewables#index" # For ember app
+  put "review/:reviewable_id/perform/:action_id" => "reviewables#perform", constraints: {
+    reviewable_id: /\d+/,
+    action_id: /[a-z\_]+/
+  }
+  put "review/:reviewable_id" => "reviewables#update", constraints: { reviewable_id: /\d+/ }
+
   get "session/sso" => "session#sso"
   get "session/sso_login" => "session#sso_login"
   get "session/sso_provider" => "session#sso_provider"
@@ -435,7 +442,6 @@ Discourse::Application.routes.draw do
     get "#{root_path}/:username/badges" => "users#badges", constraints: { username: RouteFormat.username }
     get "#{root_path}/:username/notifications" => "users#show", constraints: { username: RouteFormat.username }
     get "#{root_path}/:username/notifications/:filter" => "users#show", constraints: { username: RouteFormat.username }
-    get "#{root_path}/:username/activity/pending" => "users#show", constraints: { username: RouteFormat.username }
     delete "#{root_path}/:username" => "users#destroy", constraints: { username: RouteFormat.username, format: /(json|html)/ }
     get "#{root_path}/by-external/:external_id" => "users#show", constraints: { external_id: /[^\/]+/ }
     get "#{root_path}/:username/flagged-posts" => "users#show", constraints: { username: RouteFormat.username }

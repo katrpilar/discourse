@@ -328,8 +328,6 @@ export default Ember.Object.extend({
 
     root = root || obj;
 
-    // Experimental: If serialized with a certain option we'll wire up embedded objects
-    // automatically.
     if (root.__rest_serializer === "1") {
       this._hydrateEmbedded(type, obj, root);
     }

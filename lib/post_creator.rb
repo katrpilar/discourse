@@ -166,6 +166,7 @@ class PostCreator
         build_post_stats
         create_topic
         save_post
+        UserActionManager.post_created(@post)
         extract_links
         track_topic
         update_topic_stats

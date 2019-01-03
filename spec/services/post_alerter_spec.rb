@@ -127,8 +127,8 @@ describe PostAlerter do
       PostActionNotifier.enable
       SiteSetting.flags_required_to_hide_post = 2
 
-      PostAction.act(evil_trout, post, PostActionType.types[:spam])
-      PostAction.act(walterwhite, post, PostActionType.types[:spam])
+      PostActionCreator.create(evil_trout, post, :spam)
+      PostActionCreator.create(walterwhite, post, :spam)
 
       post.reload
       expect(post.hidden).to eq(true)
@@ -146,8 +146,8 @@ describe PostAlerter do
       expect(notification.post_number).to eq(post.post_number)
       expect(notification.data_hash["display_username"]).to eq(post.user.username)
 
-      PostAction.act(coding_horror, post, PostActionType.types[:spam])
-      PostAction.act(walterwhite, post, PostActionType.types[:off_topic])
+      PostActionCreator.create(coding_horror, post, :spam)
+      PostActionCreator.create(walterwhite, post, :off_topic)
 
       post.reload
       expect(post.hidden).to eq(true)

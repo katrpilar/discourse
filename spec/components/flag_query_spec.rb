@@ -12,7 +12,7 @@ describe FlagQuery do
 
       post = create_post
 
-      PostAction.act(moderator, post, PostActionType.types[:spam])
+      PostActionCreator.create(moderator, post, :spam)
 
       SiteSetting.min_flags_staff_visibility = 1
 
@@ -27,7 +27,7 @@ describe FlagQuery do
       result = FlagQuery.flagged_topics
       expect(result[:flagged_topics]).to be_blank
 
-      PostAction.act(admin, post, PostActionType.types[:inappropriate])
+      PostActionCreator.create(admin, post, :inappropriate)
       result = FlagQuery.flagged_topics
       expect(result[:flagged_topics]).to be_present
       ft = result[:flagged_topics].first
@@ -44,7 +44,7 @@ describe FlagQuery do
     it "does not return flags on system posts" do
       admin = Fabricate(:admin)
       post = create_post(user: Discourse.system_user)
-      PostAction.act(codinghorror, post, PostActionType.types[:spam])
+      PostActionCreator.create(codinghorror, post, :spam)
       posts, topics, users = FlagQuery.flagged_posts_report(admin)
 
       expect(posts).to be_blank
@@ -62,12 +62,17 @@ describe FlagQuery do
       user2 = Fabricate(:user)
       user3 = Fabricate(:user)
 
-      PostAction.act(codinghorror, post, PostActionType.types[:spam])
-      PostAction.act(user2, post, PostActionType.types[:spam])
-      mod_message = PostAction.act(user3, post, PostActionType.types[:notify_moderators], message: "this is a :one::zero:")
+      PostActionCreator.create(codinghorror, post, :spam)
+      PostActionCreator.create(user2, post, :spam)
+      mod_message = PostActionCreator.new(
+        user3,
+        post,
+        PostActionType.types[:notify_moderators],
+        message: "this is a :one::zero:"
+      ).perform.post_action
 
-      PostAction.act(codinghorror, post2, PostActionType.types[:spam])
-      PostAction.act(user2, post2, PostActionType.types[:spam])
+      PostActionCreator.create(codinghorror, post2, :spam)
+      PostActionCreator.create(user2, post2, :spam)
 
       posts, topics, users = FlagQuery.flagged_posts_report(admin)
 
@@ -118,7 +123,7 @@ describe FlagQuery do
 
       post = create_post
 
-      PostAction.act(flagger, post, PostActionType.types[:spam])
+      PostActionCreator.create(flagger, post, :spam)
 
       SiteSetting.min_flags_staff_visibility = 2
       posts, topics, users = FlagQuery.flagged_posts_report(admin)
@@ -126,7 +131,7 @@ describe FlagQuery do
       expect(topics).to be_blank
       expect(users).to be_blank
 
-      PostAction.act(admin, post, PostActionType.types[:inappropriate])
+      PostActionCreator.create(admin, post, :inappropriate)
       posts, topics, users = FlagQuery.flagged_posts_report(admin)
       expect(posts).to be_present
       expect(topics).to be_present
@@ -139,7 +144,7 @@ describe FlagQuery do
       post = create_post
 
       post.user.update_column(:trust_level, 0)
-      PostAction.act(tl3, post, PostActionType.types[:spam])
+      PostActionCreator.create(tl3, post, :spam)
 
       SiteSetting.min_flags_staff_visibility = 2
       posts, topics, users = FlagQuery.flagged_posts_report(admin)
@@ -152,7 +157,7 @@ describe FlagQuery do
       admin = Fabricate(:admin)
       tl4 = Fabricate(:user, trust_level: 4)
       post = create_post
-      PostAction.act(tl4, post, PostActionType.types[:spam])
+      PostActionCreator.create(tl4, post, :spam)
 
       SiteSetting.min_flags_staff_visibility = 2
       posts, topics, users = FlagQuery.flagged_posts_report(admin)

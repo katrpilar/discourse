@@ -123,7 +123,6 @@ class Topic < ActiveRecord::Base
   has_many :allowed_groups, through: :topic_allowed_groups, source: :group
   has_many :allowed_group_users, through: :allowed_groups, source: :users
   has_many :allowed_users, through: :topic_allowed_users, source: :user
-  has_many :queued_posts
 
   has_many :topic_tags
   has_many :tags, through: :topic_tags, dependent: :destroy # dependent destroy applies to the topic_tags records
@@ -247,7 +246,6 @@ class Topic < ActiveRecord::Base
     end
 
     SearchIndexer.index(self)
-    UserActionCreator.log_topic(self)
   end
 
   after_update do
@@ -364,10 +362,6 @@ class Topic < ActiveRecord::Base
     end
 
     fancy_title
-  end
-
-  def pending_posts_count
-    queued_posts.new_count
   end
 
   # Returns hot topics since a date for display in email digest.
@@ -1357,6 +1351,26 @@ class Topic < ActiveRecord::Base
     ).last || first_post
 
     update!(bumped_at: post.created_at)
+  end
+
+  def auto_close_threshold_reached?
+    return if user&.staff?
+
+    flags = PostAction.active
+      .flags
+      .joins(:post)
+      .where("posts.topic_id = ?", self.id)
+      .where("post_actions.user_id > 0")
+      .group("post_actions.user_id")
+      .pluck("post_actions.user_id, COUNT(post_id)")
+
+    # we need a minimum number of unique flaggers
+    return if flags.count < SiteSetting.num_flaggers_to_close_topic
+
+    # we need a minimum number of flags
+    return if flags.sum { |f| f[1] } < SiteSetting.num_flags_to_close_topic
+
+    true
   end
 
   private

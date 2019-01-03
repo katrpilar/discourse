@@ -21,7 +21,7 @@ describe SpamRule::AutoSilence do
     it 'delivers punishment when user should be silenced' do
       SiteSetting.num_spam_flags_to_silence_new_user = 1
       SiteSetting.num_users_to_silence_new_user = 1
-      PostAction.act(Discourse.system_user, post, PostActionType.types[:spam])
+      PostActionCreator.spam(Discourse.system_user, post)
       subject.perform
       expect(post.user.reload).to be_silenced
     end
@@ -175,8 +175,8 @@ describe SpamRule::AutoSilence do
 
     context "higher trust levels or staff" do
       it "should not autosilence any of them" do
-        PostAction.act(flagger, post, PostActionType.types[:spam])
-        PostAction.act(flagger2, post, PostActionType.types[:spam])
+        PostActionCreator.spam(flagger, post)
+        PostActionCreator.spam(flagger2, post)
 
         enforcer = described_class.new(user)
         expect(enforcer.should_autosilence?).to eq(true)
@@ -213,15 +213,15 @@ describe SpamRule::AutoSilence do
       end
 
       it 'returns false if there are not received enough flags' do
-        PostAction.act(flagger, post, PostActionType.types[:spam])
+        PostActionCreator.spam(flagger, post)
         expect(subject.num_spam_flags_against_user).to eq(1)
         expect(subject.num_users_who_flagged_spam_against_user).to eq(1)
         expect(subject.should_autosilence?).to eq(false)
       end
 
       it 'returns false if there have not been enough users' do
-        PostAction.act(flagger, post, PostActionType.types[:spam])
-        PostAction.act(flagger, post2, PostActionType.types[:spam])
+        PostActionCreator.spam(flagger, post)
+        PostActionCreator.spam(flagger, post2)
         expect(subject.num_spam_flags_against_user).to eq(2)
         expect(subject.num_users_who_flagged_spam_against_user).to eq(1)
         expect(subject.should_autosilence?).to eq(false)
@@ -229,21 +229,21 @@ describe SpamRule::AutoSilence do
 
       it 'returns false if num_spam_flags_to_silence_new_user is 0' do
         SiteSetting.num_spam_flags_to_silence_new_user = 0
-        PostAction.act(flagger, post, PostActionType.types[:spam])
-        PostAction.act(flagger2, post, PostActionType.types[:spam])
+        PostActionCreator.spam(flagger, post)
+        PostActionCreator.spam(flagger2, post)
         expect(subject.should_autosilence?).to eq(false)
       end
 
       it 'returns false if num_users_to_silence_new_user is 0' do
         SiteSetting.num_users_to_silence_new_user = 0
-        PostAction.act(flagger, post, PostActionType.types[:spam])
-        PostAction.act(flagger2, post, PostActionType.types[:spam])
+        PostActionCreator.spam(flagger, post)
+        PostActionCreator.spam(flagger2, post)
         expect(subject.should_autosilence?).to eq(false)
       end
 
       it 'returns true when there are enough flags from enough users' do
-        PostAction.act(flagger, post, PostActionType.types[:spam])
-        PostAction.act(flagger2, post, PostActionType.types[:spam])
+        PostActionCreator.spam(flagger, post)
+        PostActionCreator.spam(flagger2, post)
         expect(subject.num_spam_flags_against_user).to eq(2)
         expect(subject.num_users_who_flagged_spam_against_user).to eq(2)
         expect(subject.should_autosilence?).to eq(true)
@@ -259,25 +259,25 @@ describe SpamRule::AutoSilence do
         end
 
         it 'returns false if there are not enough flags' do
-          PostAction.act(leader1, post, PostActionType.types[:inappropriate])
+          PostActionCreator.inappropriate(leader1, post)
           expect(subject.num_tl3_flags_against_user).to eq(1)
           expect(subject.num_tl3_users_who_flagged).to eq(1)
           expect(subject.should_autosilence?).to be_falsey
         end
 
         it 'returns false if enough flags but not enough users' do
-          PostAction.act(leader1, post, PostActionType.types[:inappropriate])
-          PostAction.act(leader1, post2, PostActionType.types[:inappropriate])
-          PostAction.act(leader1, Fabricate(:post, user: user), PostActionType.types[:inappropriate])
+          PostActionCreator.inappropriate(leader1, post)
+          PostActionCreator.inappropriate(leader1, post2)
+          PostActionCreator.inappropriate(leader1, Fabricate(:post, user: user))
           expect(subject.num_tl3_flags_against_user).to eq(3)
           expect(subject.num_tl3_users_who_flagged).to eq(1)
           expect(subject.should_autosilence?).to eq(false)
         end
 
         it 'returns true if enough flags and users' do
-          PostAction.act(leader1, post, PostActionType.types[:inappropriate])
-          PostAction.act(leader1, post2, PostActionType.types[:inappropriate])
-          PostAction.act(leader2, post, PostActionType.types[:inappropriate])
+          PostActionCreator.inappropriate(leader1, post)
+          PostActionCreator.inappropriate(leader1, post2)
+          PostActionCreator.inappropriate(leader2, post)
           expect(subject.num_tl3_flags_against_user).to eq(3)
           expect(subject.num_tl3_users_who_flagged).to eq(2)
           expect(subject.should_autosilence?).to eq(true)

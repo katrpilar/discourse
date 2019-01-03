@@ -23,7 +23,7 @@ RSpec.describe Admin::FlagsController do
     end
 
     it 'should return the right response' do
-      PostAction.act(user, post_1, PostActionType.types[:spam])
+      PostActionCreator.create(user, post_1, :spam)
 
       get '/admin/flags.json'
 
@@ -39,10 +39,11 @@ RSpec.describe Admin::FlagsController do
     it 'should raise a reasonable error if a flag was deferred and then someone else agreed' do
       SiteSetting.queue_jobs = false
 
-      _post_action = PostAction.act(user, post_1, PostActionType.types[:spam], message: 'bad')
+      reviewable = PostActionCreator.spam(user, post_1).reviewable
 
       post "/admin/flags/defer/#{post_1.id}.json"
       expect(response.status).to eq(200)
+      expect(reviewable.reload).to be_ignored
 
       post "/admin/flags/agree/#{post_1.id}.json", params: { action_on_post: 'keep' }
       # 409 means conflict which is what is happening here
@@ -54,13 +55,20 @@ RSpec.describe Admin::FlagsController do
     it 'should be able to agree and keep content' do
       SiteSetting.queue_jobs = false
 
-      post_action = PostAction.act(user, post_1, PostActionType.types[:spam], message: 'bad')
+      result = PostActionCreator.spam(user, post_1)
+      reviewable = result.reviewable
 
       post "/admin/flags/agree/#{post_1.id}.json", params: { action_on_post: 'keep' }
       expect(response.status).to eq(200)
 
-      post_action.reload
-      expect(post_action.agreed_by_id).to eq(admin.id)
+      expect(reviewable.reload).to be_approved
+
+      approve_history = reviewable.reviewable_histories.where(
+        created_by: admin,
+        reviewable_history_type: ReviewableHistory.types[:transitioned],
+        status: Reviewable.statuses[:approved]
+      )
+      expect(approve_history).to be_present
       expect(user.user_stat.reload.flags_agreed).to eq(1)
 
       post_1.reload
@@ -71,7 +79,7 @@ RSpec.describe Admin::FlagsController do
       SiteSetting.allow_user_locale = true
       SiteSetting.queue_jobs = false
 
-      post_action = PostAction.act(user, post_1, PostActionType.types[:spam], message: 'bad')
+      post_action = PostActionCreator.new(user, post_1, PostActionType.types[:spam], message: 'bad').perform.post_action
       admin.update!(locale: 'ja')
 
       post "/admin/flags/agree/#{post_1.id}.json", params: { action_on_post: 'delete' }
@@ -93,7 +101,7 @@ RSpec.describe Admin::FlagsController do
       SiteSetting.queue_jobs = false
       category.update_column(:topic_id, first_post.topic_id)
 
-      PostAction.act(user, first_post, PostActionType.types[:spam], message: 'bad')
+      PostActionCreator.new(user, first_post, PostActionType.types[:spam], message: 'bad').perform
 
       post "/admin/flags/agree/#{first_post.id}.json", params: { action_on_post: 'delete' }
       expect(response.status).to eq(403)
@@ -111,7 +119,7 @@ RSpec.describe Admin::FlagsController do
       new_user = Fabricate(:newuser)
       new_post = create_post(user: new_user)
 
-      PostAction.act(Fabricate(:leader), new_post, PostActionType.types[:spam])
+      PostActionCreator.spam(Fabricate(:leader), new_post)
 
       post "/admin/flags/disagree/#{new_post.id}.json"
       expect(response.status).to eq(200)

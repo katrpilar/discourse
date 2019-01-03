@@ -84,26 +84,12 @@ widgetTest("queued posts", {
   beforeEach() {
     this.currentUser.setProperties({
       staff: true,
-      show_queued_posts: true,
-      post_queue_new_count: 5
+      reviewable_count: 5
     });
   },
 
   test(assert) {
-    assert.ok(this.$(".queued-posts-link").length);
-    assert.equal(this.$(".queued-posts").text(), "5");
-  }
-});
-
-widgetTest("queued posts - disabled", {
-  template: '{{mount-widget widget="hamburger-menu"}}',
-
-  beforeEach() {
-    this.currentUser.setProperties({ staff: true, show_queued_posts: false });
-  },
-
-  test(assert) {
-    assert.ok(!this.$(".queued-posts-link").length);
+    assert.equal(this.$(".reviewables").text(), "5");
   }
 });
 

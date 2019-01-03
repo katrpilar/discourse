@@ -172,6 +172,9 @@ export default function() {
     }
   );
 
+  this.route("review", { path: "/review" }, function() {
+    this.route("index", { path: "/" });
+  });
   this.route("signup", { path: "/signup" });
   this.route("login", { path: "/login" });
   this.route("login-preferences");
@@ -189,8 +192,6 @@ export default function() {
   this.route("badges", { resetNamespace: true }, function() {
     this.route("show", { path: "/:id/:slug" });
   });
-
-  this.route("queued-posts", { path: "/queued-posts", resetNamespace: true });
 
   this.route("full-page-search", { path: "/search" });
 

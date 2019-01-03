@@ -1,0 +1,9 @@
+{{#if reviewables}}
+  <div class='reviewables'>
+    {{#each reviewables as |r|}}
+      {{reviewable-item reviewable=r remove=(action "remove")}}
+    {{/each}}
+  </div>
+{{else}}
+  {{i18n "review.none"}}
+{{/if}}
