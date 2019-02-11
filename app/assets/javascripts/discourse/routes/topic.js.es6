@@ -211,7 +211,7 @@ const TopicRoute = Discourse.Route.extend({
       });
     }
 
-    const queryParams = transition.queryParams;
+    const queryParams = transition.to.queryParams;
 
     let topic = this.modelFor("topic");
     if (topic && topic.get("id") === parseInt(params.id, 10)) {

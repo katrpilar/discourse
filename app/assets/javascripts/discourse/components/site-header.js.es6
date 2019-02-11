@@ -230,21 +230,23 @@ const SiteHeaderComponent = MountWidget.extend(Docking, PanEvents, {
     this._super(...arguments);
     $(window).on("resize.discourse-menu-panel", () => this.afterRender());
 
-    this.appEvents.on("header:show-topic", topic => this.setTopic(topic));
-    this.appEvents.on("header:hide-topic", () => this.setTopic(null));
+    this.appEvents.on("header:show-topic", this, "setTopic");
+    this.appEvents.on("header:hide-topic", this, "setTopic");
 
     this.dispatch("notifications:changed", "user-notifications");
     this.dispatch("header:keyboard-trigger", "header");
     this.dispatch("search-autocomplete:after-complete", "search-term");
 
-    this.appEvents.on("dom:clean", () => {
-      // For performance, only trigger a re-render if any menu panels are visible
-      if (this.$(".menu-panel").length) {
-        this.eventDispatched("dom:clean", "header");
-      }
-    });
+    this.appEvents.on("dom:clean", this, "_cleanDom");
 
     this.addTouchListeners($("body"));
+  },
+
+  _cleanDom() {
+    // For performance, only trigger a re-render if any menu panels are visible
+    if (this.$(".menu-panel").length) {
+      this.eventDispatched("dom:clean", "header");
+    }
   },
 
   willDestroyElement() {
@@ -252,9 +254,9 @@ const SiteHeaderComponent = MountWidget.extend(Docking, PanEvents, {
     $("body").off("keydown.header");
     $(window).off("resize.discourse-menu-panel");
 
-    this.appEvents.off("header:show-topic");
-    this.appEvents.off("header:hide-topic");
-    this.appEvents.off("dom:clean");
+    this.appEvents.off("header:show-topic", this, "setTopic");
+    this.appEvents.off("header:hide-topic", this, "setTopic");
+    this.appEvents.off("dom:clean", this, "_cleanDom");
 
     this.removeTouchListeners($("body"));
 
