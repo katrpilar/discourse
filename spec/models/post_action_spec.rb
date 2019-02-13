@@ -65,17 +65,12 @@ describe PostAction do
       expect(topic.posts.count).to eq(2)
 
       result.reviewable.perform(admin, :agree)
-      expect(result.post_action.user.user_stat.flags_agreed).to eq(1)
-      expect(result.post_action.user.user_stat.flags_disagreed).to eq(0)
-
       topic.reload
       expect(topic.posts.count).to eq(2)
 
       # Clearing the flags should not post an automated status message
       result = PostActionCreator.notify_moderators(mod, post, "another special message")
       result.reviewable.perform(admin, :disagree)
-      expect(result.post_action.user.user_stat.flags_agreed).to eq(0)
-      expect(result.post_action.user.user_stat.flags_disagreed).to eq(1)
       topic.reload
       expect(topic.posts.count).to eq(2)
 
@@ -86,8 +81,6 @@ describe PostAction do
 
       expect(topic.posts.count).to eq(1)
       result.reviewable.perform(admin, :agree)
-      expect(result.post_action.user.user_stat.flags_agreed).to eq(2)
-      expect(result.post_action.user.user_stat.flags_disagreed).to eq(0)
 
       topic.reload
       expect(topic.posts.count).to eq(2)
@@ -1002,8 +995,6 @@ describe PostAction do
 
       SiteSetting.auto_respond_to_flag_actions = false
       result.reviewable.perform(admin, :agree)
-      expect(moderator.reload.user_stat.flags_agreed).to eq(1)
-
       expect(topic.reload.posts.count).to eq(1)
     end
 
@@ -1018,10 +1009,8 @@ describe PostAction do
 
       SiteSetting.auto_respond_to_flag_actions = true
       reviewable.perform(admin, :agree)
-      expect(user.reload.user_stat.flags_agreed).to eq(1)
 
       user_notifications = user.notifications
-      expect(user_notifications.count).to eq(1)
       expect(user_notifications.last.topic).to eq(topic)
     end
 

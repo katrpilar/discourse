@@ -47,6 +47,7 @@ class PostActionDestroyer
     GivenDailyLike.decrement_for(@destroyed_by.id) if @post_action_type_id == PostActionType.types[:like]
 
     UserActionManager.post_action_destroyed(post_action)
+    PostActionNotifier.post_action_deleted(post_action)
 
     result.success = true
     result.post = @post.reload

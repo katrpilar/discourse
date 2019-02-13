@@ -7,8 +7,8 @@ class PostActionCreator
 
   # Shortcut methods for easier invocation
   class << self
-    def create(created_by, post, action_key, message: nil)
-      new(created_by, post, PostActionType.types[action_key], message: message).perform
+    def create(created_by, post, action_key, message: nil, created_at: nil)
+      new(created_by, post, PostActionType.types[action_key], message: message, created_at: created_at).perform
     end
 
     [:like, :off_topic, :spam, :inappropriate].each do |action|
@@ -86,6 +86,8 @@ class PostActionCreator
         create_reviewable(result)
         enforce_rules
         UserActionManager.post_action_created(post_action)
+        PostActionNotifier.post_action_created(post_action)
+        notify_subscribers
 
         result.success = true
         result.post_action = post_action
@@ -106,6 +108,16 @@ class PostActionCreator
   end
 
 private
+
+  def notify_subscribers
+    if self.class.notify_types.include?(@post_action_name)
+      @post.publish_change_to_clients! :acted
+    end
+  end
+
+  def self.notify_types
+    @notify_types ||= ([:like] + PostActionType.notify_flag_types.keys)
+  end
 
   def enforce_rules
     auto_close_if_threshold_reached
@@ -260,7 +272,7 @@ private
       topic: @post.topic,
       reviewable_by_moderator: true
     )
-    result.reviewable.add_score(@created_by, @post_action_type_id)
+    result.reviewable.add_score(@created_by, @post_action_type_id, created_at: @created_at)
   end
 
   def guardian

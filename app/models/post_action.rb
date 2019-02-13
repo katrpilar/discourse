@@ -21,9 +21,6 @@ class PostAction < ActiveRecord::Base
   scope :active, -> { where(disagreed_at: nil, deferred_at: nil, agreed_at: nil, deleted_at: nil) }
 
   after_save :update_counters
-  after_save :update_notifications
-  after_create :create_notifications
-  after_commit :notify_subscribers
   validate :ensure_unique_actions, on: :create
 
   def disposed_by_id
@@ -39,15 +36,6 @@ class PostAction < ActiveRecord::Base
     return :agreed if agreed_at
     return :deferred if deferred_at
     nil
-  end
-
-  def self.flag_count_by_date(start_date, end_date, category_id = nil)
-    result = where('post_actions.created_at >= ? AND post_actions.created_at <= ?', start_date, end_date)
-    result = result.where(post_action_type_id: PostActionType.flag_types_without_custom.values)
-    result = result.joins(post: :topic).where("topics.category_id = ?", category_id) if category_id
-    result.group('date(post_actions.created_at)')
-      .order('date(post_actions.created_at)')
-      .count
   end
 
   # Forums can choose to apply a minimum number of flags required before it shows up in
@@ -352,22 +340,6 @@ class PostAction < ActiveRecord::Base
       PostAction.update_flagged_posts_count
     end
 
-  end
-
-  def update_notifications
-    if self.deleted_at.present?
-      PostActionNotifier.post_action_deleted(self)
-    end
-  end
-
-  def create_notifications
-    PostActionNotifier.post_action_created(self)
-  end
-
-  def notify_subscribers
-    if (is_like? || is_flag?) && post
-      post.publish_change_to_clients! :acted
-    end
   end
 end
 

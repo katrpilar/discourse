@@ -68,12 +68,13 @@ class Reviewable < ActiveRecord::Base
     find_by(target: target).tap { |r| r.log_history(:transitioned, created_by) }
   end
 
-  def add_score(user, reviewable_score_type)
+  def add_score(user, reviewable_score_type, created_at: nil)
     reviewable_scores.create!(
       user: user,
       status: ReviewableScore.statuses[:pending],
       reviewable_score_type: reviewable_score_type,
-      score: 1.0
+      score: ReviewableScore.user_flag_score(user),
+      created_at: created_at || Time.zone.now
     )
   end
 
@@ -226,6 +227,19 @@ class Reviewable < ActiveRecord::Base
     result.transition_to = transition_to
     yield result if block_given?
     result
+  end
+
+  def self.scores_with_topics
+    ReviewableScore.joins(reviewable: :topic).where("reviewables.type = ?", name)
+  end
+
+  def self.count_by_date(start_date, end_date, category_id = nil)
+    scores_with_topics
+      .where('reviewable_scores.created_at BETWEEN ? AND ?', start_date, end_date)
+      .where("topics.category_id = COALESCE(?, topics.category_id)", category_id)
+      .group("date(reviewable_scores.created_at)")
+      .order('date(reviewable_scores.created_at)')
+      .count
   end
 
 protected

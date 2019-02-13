@@ -29,6 +29,20 @@ class ReviewableScore < ActiveRecord::Base
     Reviewable::Collection::Item.new(reviewable_score_type)
   end
 
+  def self.user_flag_score(user)
+    1.0 + (user.staff? ? 5.0 : user.trust_level.to_f) + user_accuracy_bonus(user)
+  end
+
+  def self.user_accuracy_bonus(user)
+    user_stat = user&.user_stat
+    return 0.0 if user_stat.blank?
+
+    total = (user_stat.flags_agreed + user_stat.flags_disagreed + user_stat.flags_ignored).to_f
+    return 0.0 if total <= 5
+
+    (user_stat.flags_agreed / total) * 5.0
+  end
+
 end
 
 # == Schema Information

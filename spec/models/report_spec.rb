@@ -162,21 +162,16 @@ describe Report do
       context "with #{pluralized}" do
         before(:each) do
           freeze_time DateTime.parse('2017-03-01 12:00')
-          fabricator = case arg
-                       when :signup
-                         :user
-                       when :email
-                         :email_log
+
+          if arg == :flag
+            user = Fabricate(:user)
+            builder = -> (dt) { PostActionCreator.create(user, Fabricate(:post), :spam, created_at: dt) }
           else
-                         arg
+            factories = { signup: :user, email: :email_log }
+            builder = -> (dt) { Fabricate(factories[arg] || arg, created_at: dt) }
           end
-          Fabricate(fabricator)
-          Fabricate(fabricator, created_at: 1.hours.ago)
-          Fabricate(fabricator, created_at: 1.hours.ago)
-          Fabricate(fabricator, created_at: 1.day.ago)
-          Fabricate(fabricator, created_at: 2.days.ago)
-          Fabricate(fabricator, created_at: 30.days.ago)
-          Fabricate(fabricator, created_at: 35.days.ago)
+
+          [DateTime.now, 1.hour.ago, 1.hour.ago, 1.day.ago, 2.days.ago, 30.days.ago, 35.days.ago].each(&builder)
         end
 
         it "returns today's data" do
@@ -751,12 +746,10 @@ describe Report do
         post1 = Fabricate(:post, topic: Fabricate(:topic, category: c1))
         post2 = Fabricate(:post)
         post3 = Fabricate(:post)
-        PostActionCreator.create(user, post0, :off_topic)
-        PostActionCreator.create(user, post1, :off_topic)
-        PostActionCreator.create(user, post2, :off_topic)
-        PostActionCreator.create(user, post3, :off_topic).post_action.tap do |pa|
-          pa.created_at = 45.days.ago
-        end.save
+        PostActionCreator.off_topic(user, post0)
+        PostActionCreator.off_topic(user, post1)
+        PostActionCreator.off_topic(user, post2)
+        PostActionCreator.create(user, post3, :off_topic, created_at: 45.days.ago)
       end
 
       context "with category filtering" do

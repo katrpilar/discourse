@@ -1,6 +1,5 @@
 require 'rails_helper'
 require_dependency 'queued_posts_controller'
-require_dependency 'queued_post'
 
 # NOTE: This controller only exists for backwards compatibility
 describe QueuedPostsController do
